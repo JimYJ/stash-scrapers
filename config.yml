@@ -1,0 +1,7 @@
+base:
+  servicename: OpenPlatfromService
+sqlite:
+  path: ./my_porn_lib
+  user:
+  pass:
+  dbname: main
