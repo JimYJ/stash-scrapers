@@ -1,7 +1,7 @@
 base:
   servicename: OpenPlatfromService
 sqlite:
-  path: ./my_porn_lib
+  path: D:\my-movie-lib\my_porn_lib
   user:
   pass:
   dbname: main

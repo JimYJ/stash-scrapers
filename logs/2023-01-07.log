@@ -1,0 +1,11 @@
+[OpenPlatfromService] 2023/01/07 19:56:48 D:/gopath/src/stash-scrapers/common/sqlite/sqlite.go:25 sql: unknown driver "sqlite3ex" (forgotten import?)
+[OpenPlatfromService] 2023/01/07 20:02:20 D:/gopath/src/stash-scrapers/common/sqlite/sqlite.go:25 sql: unknown driver "sqlite3ex" (forgotten import?)
+[OpenPlatfromService] 2023/01/07 20:07:19 D:/gopath/src/stash-scrapers/common/sqlite/sqlite.go:25 sql: unknown driver "sqlite3ex" (forgotten import?)
+[OpenPlatfromService] 2023/01/07 21:04:19 D:/gopath/src/stash-scrapers/app/minnano-av.go:94 81(Dカップ)
+[OpenPlatfromService] 2023/01/07 21:04:22 D:/gopath/src/stash-scrapers/app/db.go:25 insert performer metadata fail: no such function: now
+[OpenPlatfromService] 2023/01/07 21:04:22 D:/gopath/src/stash-scrapers/app/minnano-av.go:154 &{8 白鳥涼子 {FEMALE true} { false} { false} { false} {1972-11-30
+				 true} {Asian true} {JP true} { false} {158 true} {81D-58-79 true} { false} {2007 - true} { false} { false} {清田かおる  true} { false} { false} { false} { false} { false} {0 false} {0 false}}
+[OpenPlatfromService] 2023/01/07 22:01:29 D:/gopath/src/stash-scrapers/app/minnano-av.go:94 81(Dカップ)
+[OpenPlatfromService] 2023/01/07 22:01:30 D:/gopath/src/stash-scrapers/app/minnano-av.go:154 &{8 白鳥涼子 {FEMALE true} { false} { false} { false} {1972-11-30
+				 true} {Asian true} {JP true} { false} {158 true} {81D-58-79 true} { false} {2007 - true} { false} { false} {清田かおる  true} { false} { false} { false} { false} { false} {0 false} {0 false}}
+[OpenPlatfromService] 2023/01/07 22:11:44 D:/gopath/src/stash-scrapers/app/minnano-av.go:33 搜索失败: Get "http://www.minnano-av.com/search_result.php?search_scope=actress&search_word=古館びわ&search=+Go+": EOF -1

@@ -3,15 +3,12 @@ package utils
 import (
 	"bytes"
 	"errors"
-	"io"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
-	"net/url"
-	"os"
-	"strings"
 	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 // http请求方法
@@ -24,86 +21,10 @@ const (
 )
 
 const (
-	httpRequestTimeOut = 3 * time.Second // 回调接口主动推送响应超时时间
+	httpRequestTimeOut = 10 * time.Second // 回调接口主动推送响应超时时间
+	userAgentDefault   = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+	proxyURL           = "127.0.0.1:1080"
 )
-
-// Get 常规GET请求
-func Get(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
-	if resp != nil {
-		log.Println(resp.StatusCode, url)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
-}
-
-// Post 上传
-func Post(url, payload string) ([]byte, error) {
-	resp, err := http.Post(url, "application/x-www-form-urlencoded", strings.NewReader(payload)) //"name=cjb"
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
-}
-
-// PostData 表单模式传输数据
-func PostData(url string, payload url.Values) ([]byte, error) {
-	resp, err := http.PostForm(url, payload)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
-}
-
-// PostFile 表单模式传输文件
-func PostFile(method, url, path, paramName string, params map[string]string) ([]byte, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	reqbody := &bytes.Buffer{}
-	writer := multipart.NewWriter(reqbody)
-	part, err := writer.CreateFormFile(paramName, path)
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.Copy(part, file)
-	for key, val := range params {
-		_ = writer.WriteField(key, val)
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.NewRequest(method, url, reqbody)
-	resp.Header.Set("Content-Type", writer.FormDataContentType())
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
-}
 
 // HTTPStd 标准自定义请求,可请求二进制流，禁止网址转跳
 func HTTPStd(method, url string, payload []byte) (int, []byte, error) {
@@ -133,6 +54,54 @@ func HTTPStd(method, url string, payload []byte) (int, []byte, error) {
 		return -1, nil, err
 	}
 	return resp.StatusCode, body, nil
+}
+
+func HTTPForMinnanoAV(url string, referer, userAgent string) (int, []byte, error, int) {
+	return HTTPCheckJump(GET, url, nil, "www.minnano-av.com", referer, "")
+}
+
+// HTTPCheckJump 标准HTTP请求+检测302转跳
+func HTTPCheckJump(method, urlPath string, payload []byte, host, referer, userAgent string) (int, []byte, error, int) {
+	client := &http.Client{}
+	var jumpNum int = 0
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		jumpNum = len(via)
+		return nil
+	}
+	dialer, err := proxy.SOCKS5("tcp", proxyURL, nil, proxy.Direct)
+	if err != nil {
+		return -1, nil, err, jumpNum
+	}
+	client.Timeout = httpRequestTimeOut
+	client.Transport = &http.Transport{
+		Dial: dialer.Dial,
+	}
+	reqbody := bytes.NewReader(payload)
+	req, err := http.NewRequest(method, urlPath, reqbody)
+	if err != nil {
+		return -1, nil, err, jumpNum
+	}
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Host", host)
+	if len(referer) != 0 {
+		req.Header.Set("referer", referer)
+	}
+	if len(userAgent) == 0 {
+		req.Header.Set("User-Agent", userAgentDefault)
+	} else {
+		req.Header.Set("User-Agent", userAgent)
+	}
+	req.Header.Set("Cookie", "PHPSESSID=40smomv7huibn9jevpi7c1t9i2;")
+	resp, err := client.Do(req)
+	if err != nil {
+		return -1, nil, err, jumpNum
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return -1, nil, err, jumpNum
+	}
+	return resp.StatusCode, body, nil, jumpNum
 }
 
 // HTTP 自定义请求,可请求二进制流
