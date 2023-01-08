@@ -22,7 +22,17 @@ func MinnanoRun() {
 	for _, item := range list {
 		body, jumpNum := Search(item.Name)
 		if jumpNum == 1 {
-			MetaData(item, body)
+			allData(item, body)
+		}
+	}
+}
+
+func MinnanoRunAvatar() {
+	list := getNoneImagePerformerList()
+	for _, item := range list {
+		body, jumpNum := Search(item.Name)
+		if jumpNum == 1 {
+			onlyAvatar(item, body)
 		}
 	}
 }
@@ -40,8 +50,8 @@ func Search(actressName string) ([]byte, int) {
 	return body, jumpNum
 }
 
-// prase MetaData from html
-func MetaData(performer *Performers, body []byte) {
+// prase allData from html
+func allData(performer *Performers, body []byte) {
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
 		log.Println(err)
@@ -51,8 +61,47 @@ func MetaData(performer *Performers, body []byte) {
 	detailPage(performer, doc, image)
 }
 
+func onlyAvatar(performer *Performers, body []byte) {
+	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	image := &PerformersImage{}
+	handelAvatar(performer, doc, image)
+	savePerformerImage(image)
+}
+
 // pdetail page
 func detailPage(performer *Performers, doc *goquery.Document, image *PerformersImage) {
+	handelMetadata(performer, doc)
+	handelAvatar(performer, doc, image)
+	// 处理别名
+	performer.Country.String = "JP"
+	performer.Country.Valid = true
+	performer.Ethnicity.String = "Asian"
+	performer.Ethnicity.Valid = true
+	performer.Gender.String = "FEMALE"
+	performer.Gender.Valid = true
+	savePerformer(performer)
+	counts := checkPerformerImage(image)
+	if counts > 0 {
+		updatePerformerImage(image)
+	} else {
+		savePerformerImage(image)
+	}
+	log.Println(performer)
+}
+
+func handelAvatar(performer *Performers, doc *goquery.Document, image *PerformersImage) {
+	imageURL, ok := doc.Find(".thumb").Find("img").Attr("src")
+	if ok {
+		image.PerformerID = performer.ID
+		image.Image = GetImage(imageURL)
+	}
+}
+
+func handelMetadata(performer *Performers, doc *goquery.Document) {
 	var title, content string
 	var list []string
 	aliasesMap := make(map[string]bool)
@@ -134,12 +183,6 @@ func detailPage(performer *Performers, doc *goquery.Document, image *PerformersI
 		}
 		// log.Println(name, title, content)
 	})
-	imageURL, ok := doc.Find(".thumb").Find("img").Attr("src")
-	if ok {
-		image.PerformerID = performer.ID
-		image.Image = GetImage(imageURL)
-	}
-	// 处理别名
 	for k := range aliasesMap {
 		if len(performer.Aliases.String) == 0 {
 			performer.Aliases.String = k
@@ -148,20 +191,6 @@ func detailPage(performer *Performers, doc *goquery.Document, image *PerformersI
 			performer.Aliases.String += fmt.Sprintf(",%s", k)
 		}
 	}
-	performer.Country.String = "JP"
-	performer.Country.Valid = true
-	performer.Ethnicity.String = "Asian"
-	performer.Ethnicity.Valid = true
-	performer.Gender.String = "FEMALE"
-	performer.Gender.Valid = true
-	savePerformer(performer)
-	counts := checkPerformerImage(image)
-	if counts > 0 {
-		updatePerformerImage(image)
-	} else {
-		savePerformerImage(image)
-	}
-	log.Println(performer)
 }
 
 func GetImage(url string) string {

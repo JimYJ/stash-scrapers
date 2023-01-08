@@ -17,6 +17,17 @@ func getPerformerList() []*Performers {
 	return list
 }
 
+func getNoneImagePerformerList() []*Performers {
+	conn := sqlite.Conn()
+	var list []*Performers
+	err := conn.Select(&list, "select id,name from performers p LEFT JOIN performers_image pi ON pi.performer_id = p.id where pi.image ISNULL")
+	if err != nil {
+		log.Println("get performer list fail:", err)
+		return nil
+	}
+	return list
+}
+
 // save performer metadata
 func savePerformer(performer *Performers) {
 	conn := sqlite.Conn()
