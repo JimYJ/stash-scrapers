@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"regexp"
 	"stash-scrapers/common/utils"
 	"stash-scrapers/services/log"
 	"strconv"
@@ -21,6 +22,10 @@ var (
 func MinnanoRun() {
 	list := getPerformerList()
 	for _, item := range list {
+		matched, _ := regexp.MatchString(`^[A-Za-z0-9 ."-]+$`, item.Name)
+		if matched {
+			continue
+		}
 		body, jumpNum := Search(item.Name)
 		if jumpNum == 1 {
 			doc, image := initPerformer(body)
@@ -50,6 +55,10 @@ func SingleTest(item *Performers) {
 func MinnanoRunAvatar() {
 	list := getNoneImagePerformerList()
 	for _, item := range list {
+		matched, _ := regexp.MatchString(`^[A-Za-z0-9 ."-]+$`, item.Name)
+		if matched {
+			continue
+		}
 		body, jumpNum := Search(item.Name)
 		if jumpNum == 1 {
 			onlyAvatar(item, body)
@@ -131,7 +140,7 @@ func detailPage(performer *Performers, doc *goquery.Document, image *PerformersI
 	performer.Ethnicity.Valid = true
 	performer.Gender.String = "FEMALE"
 	performer.Gender.Valid = true
-	if performer.Aliases.Valid || performer.Birthdate.Valid || performer.CareerLength.Valid || performer.Twitter.Valid || performer.Measurements.Valid || performer.Height.Valid {
+	if performer.Aliases.Valid || performer.Birthdate.Valid || performer.CareerLength.Valid || performer.Twitter.Valid || performer.Measurements.Valid || performer.Height.Valid || len(image.Image) > 0 {
 		savePerformer(performer)
 	}
 	counts := checkPerformerImage(image)
