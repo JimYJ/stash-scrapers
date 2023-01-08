@@ -17,12 +17,14 @@ var (
 )
 
 // run
-func MinnanoRun(item *Performers) {
-	// list := getPerformerList()
-	// for _, item := range list {
-	body, jumpNum := Search(item.Name)
-	MetaData(item, body, jumpNum)
-	// }
+func MinnanoRun() {
+	list := getPerformerList()
+	for _, item := range list {
+		body, jumpNum := Search(item.Name)
+		if jumpNum == 1 {
+			MetaData(item, body)
+		}
+	}
 }
 
 // Search performer
@@ -39,17 +41,14 @@ func Search(actressName string) ([]byte, int) {
 }
 
 // prase MetaData from html
-func MetaData(performer *Performers, body []byte, jumpNum int) {
+func MetaData(performer *Performers, body []byte) {
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	image := &PerformersImage{}
-	// jump to detail page
-	if jumpNum == 1 {
-		detailPage(performer, doc, image)
-	}
+	detailPage(performer, doc, image)
 }
 
 // pdetail page
@@ -64,60 +63,71 @@ func detailPage(performer *Performers, doc *goquery.Document, image *PerformersI
 		title = s.Find("span").Text()
 		content = s.Find("p").Text()
 		if title == "別名" {
-			i := strings.Index(content, "（")
-			content = strings.ReplaceAll(content[:i], "　", "")
-			aliasesMap[content] = true
+			if len(strings.TrimSpace(content)) != 0 {
+				i := strings.Index(content, "（")
+				content = strings.ReplaceAll(content[:i], "　", "")
+				aliasesMap[content] = true
+			}
 		}
 		if title == "生年月日" {
-			i := strings.Index(content, "（")
-			content = strings.ReplaceAll(content[:i], "年", "-")
-			content = strings.ReplaceAll(content, "月", "-")
-			content = strings.ReplaceAll(content, "日", "")
-			performer.Birthdate.String = content
-			performer.Birthdate.Valid = true
+			if len(strings.TrimSpace(content)) != 0 {
+				i := strings.Index(content, "（")
+				content = strings.ReplaceAll(content[:i], "年", "-")
+				content = strings.ReplaceAll(content, "月", "-")
+				content = strings.ReplaceAll(content, "日", "")
+				performer.Birthdate.String = content
+				performer.Birthdate.Valid = true
+			}
 		}
 		if title == "サイズ" {
-			list = strings.Split(content, "/")
-			var b, w, h, cup string
-			for _, item := range list {
-				item = strings.TrimSpace(item)
-				if item[:1] == "T" { // 身高
-					h, err := strconv.Atoi(item[1:])
-					if err != nil {
-						log.Println("change height fail", err, item[1:])
-					} else {
-						performer.Height.Int32 = int32(h)
-						performer.Height.Valid = true
+			if len(strings.TrimSpace(content)) != 0 && content != "T / B / W / H / S" {
+				list = strings.Split(content, "/")
+				var b, w, h, cup string
+				for _, item := range list {
+					item = strings.TrimSpace(item)
+					if item[:1] == "T" { // 身高
+						h, err := strconv.Atoi(item[1:])
+						if err != nil {
+							log.Println("change height fail", err, item[1:])
+						} else {
+							performer.Height.Int32 = int32(h)
+							performer.Height.Valid = true
+						}
+					}
+					if item[:1] == "B" { // 胸围
+						log.Println(item[1:])
+						i := strings.Index(item[1:], "(")
+						if i == -1 {
+							b = item[1:]
+							cup = ""
+						} else {
+							b = item[1 : i+1]
+							if len(item) > i+3 {
+								cup = item[i+2 : i+3]
+							}
+						}
+					}
+					if item[:1] == "W" { // 腰围
+						w = item[1:]
+					}
+					if item[:1] == "H" { // 臀围
+						h = item[1:]
 					}
 				}
-				if item[:1] == "B" { // 胸围
-					log.Println(item[1:])
-					i := strings.Index(item[1:], "(")
-					b = item[1 : i+1]
-					if len(item) > i+3 {
-						cup = item[i+2 : i+3]
-					}
+				if len(b) != 0 && len(w) != 0 && len(h) != 0 {
+					performer.Measurements.String = fmt.Sprintf("%s%s-%s-%s", b, cup, w, h)
+					performer.Measurements.Valid = true
 				}
-				if item[:1] == "W" { // 腰围
-					w = item[1:]
-				}
-				if item[:1] == "H" { // 臀围
-					h = item[1:]
-				}
-			}
-			if len(b) != 0 && len(w) != 0 && len(h) != 0 && len(cup) != 0 {
-				performer.Measurements.String = fmt.Sprintf("%s%s-%s-%s", b, cup, w, h)
-				performer.Measurements.Valid = true
 			}
 		}
 		if title == "AV出演期間" {
-			if len(content) != 0 {
+			if len(strings.TrimSpace(content)) != 0 {
 				performer.CareerLength.String = strings.ReplaceAll(content, "年", "")
 				performer.CareerLength.Valid = true
 			}
 		}
 		if title == "ブログ" {
-			if len(content) != 0 {
+			if len(strings.TrimSpace(content)) != 0 {
 				performer.Twitter.String = content
 				performer.Twitter.Valid = true
 			}

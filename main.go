@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	p := &app.Performers{
-		ID:   9,
-		Name: "古館びわ",
-	}
-	app.MinnanoRun(p)
+	// p := &app.Performers{
+	// 	ID:   15,
+	// 	Name: "加護範子",
+	// }
+	app.MinnanoRun()
 }

@@ -9,7 +9,7 @@ import (
 func getPerformerList() []*Performers {
 	conn := sqlite.Conn()
 	var list []*Performers
-	err := conn.Get(&list, "select id,name from performers where gender ISNULL")
+	err := conn.Select(&list, "select id,name from performers where gender ISNULL")
 	if err != nil {
 		log.Println("get performer list fail:", err)
 		return nil
