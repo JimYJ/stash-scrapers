@@ -41,6 +41,9 @@ func savePerformer(performer *Performers) {
 
 // save performer Image
 func savePerformerImage(performerImage *PerformersImage) {
+	if len(performerImage.Image) < 10 {
+		return
+	}
 	conn := sqlite.Conn()
 	_, err := conn.Exec("INSERT INTO performers_image (performer_id,image)VALUES(?,?)",
 		performerImage.PerformerID, performerImage.Image)
@@ -51,6 +54,9 @@ func savePerformerImage(performerImage *PerformersImage) {
 }
 
 func updatePerformerImage(performerImage *PerformersImage) {
+	if len(performerImage.Image) < 10 {
+		return
+	}
 	conn := sqlite.Conn()
 	_, err := conn.Exec("update performers_image set image = ? where performer_id = ?",
 		performerImage.Image, performerImage.PerformerID)

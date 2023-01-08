@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"stash-scrapers/common/utils"
 	"stash-scrapers/services/log"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 
 var (
 	referer = "http://www.minnano-av.com"
-	host    = "http://www.minnano-av.com"
+	host    = "www.minnano-av.com"
 )
 
 // run
@@ -22,8 +23,27 @@ func MinnanoRun() {
 	for _, item := range list {
 		body, jumpNum := Search(item.Name)
 		if jumpNum == 1 {
-			allData(item, body)
+			doc, image := initPerformer(body)
+			detailPage(item, doc, image)
+		} else if jumpNum == 0 {
+			doc, _ := initPerformer(body)
+			body, _ = get(getDetailURL(item.Name, doc))
+			doc, image := initPerformer(body)
+			detailPage(item, doc, image)
 		}
+	}
+}
+
+func SingleTest(item *Performers) {
+	body, jumpNum := Search(item.Name)
+	if jumpNum == 1 {
+		doc, image := initPerformer(body)
+		detailPage(item, doc, image)
+	} else if jumpNum == 0 {
+		doc, _ := initPerformer(body)
+		body, _ = get(getDetailURL(item.Name, doc))
+		doc, image := initPerformer(body)
+		detailPage(item, doc, image)
 	}
 }
 
@@ -33,14 +53,36 @@ func MinnanoRunAvatar() {
 		body, jumpNum := Search(item.Name)
 		if jumpNum == 1 {
 			onlyAvatar(item, body)
+		} else if jumpNum == 0 {
+			doc, _ := initPerformer(body)
+			body, _ = get(getDetailURL(item.Name, doc))
+			onlyAvatar(item, body)
 		}
+	}
+}
+
+func FixAvatar(id int, filePath string) {
+	images, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Println("load image file fail:", err)
+		return
+	}
+	image := &PerformersImage{
+		PerformerID: id,
+		Image:       string(images),
+	}
+	counts := checkPerformerImage(image)
+	if counts > 0 {
+		updatePerformerImage(image)
+	} else {
+		savePerformerImage(image)
 	}
 }
 
 // Search performer
 func Search(actressName string) ([]byte, int) {
 	url := fmt.Sprintf(`http://www.minnano-av.com/search_result.php?search_scope=actress&search_word=%s&search=+Go+`, actressName)
-	code, body, err, jumpNum := utils.HTTPForMinnanoAV(url, referer, "")
+	code, body, jumpNum, err := utils.HTTPForMinnanoAV(url, referer, "")
 	if err != nil || code != 200 {
 		log.Println("搜索失败:", err, code)
 		return nil, 0
@@ -50,29 +92,35 @@ func Search(actressName string) ([]byte, int) {
 	return body, jumpNum
 }
 
-// prase allData from html
-func allData(performer *Performers, body []byte) {
+// Search performer
+func get(url string) ([]byte, int) {
+	code, body, jumpNum, err := utils.HTTPForMinnanoAV(fmt.Sprintf("http://%s/%s", host, url), referer, "")
+	if err != nil || code != 200 {
+		log.Println("搜索失败:", err, code)
+		return nil, 0
+	}
+	// log.Println(code, string(body), jumpNum)
+	referer = fmt.Sprintf("http://%s/%s", host, url)
+	return body, jumpNum
+}
+
+func initPerformer(body []byte) (*goquery.Document, *PerformersImage) {
 	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 	if err != nil {
 		log.Println(err)
-		return
+		return nil, nil
 	}
 	image := &PerformersImage{}
-	detailPage(performer, doc, image)
+	return doc, image
 }
 
 func onlyAvatar(performer *Performers, body []byte) {
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	image := &PerformersImage{}
+	doc, image := initPerformer(body)
 	handelAvatar(performer, doc, image)
 	savePerformerImage(image)
 }
 
-// pdetail page
+// prase detail page
 func detailPage(performer *Performers, doc *goquery.Document, image *PerformersImage) {
 	handelMetadata(performer, doc)
 	handelAvatar(performer, doc, image)
@@ -93,12 +141,21 @@ func detailPage(performer *Performers, doc *goquery.Document, image *PerformersI
 	log.Println(performer)
 }
 
-func handelAvatar(performer *Performers, doc *goquery.Document, image *PerformersImage) {
-	imageURL, ok := doc.Find(".thumb").Find("img").Attr("src")
-	if ok {
-		image.PerformerID = performer.ID
-		image.Image = GetImage(imageURL)
-	}
+func getDetailURL(actressName string, doc *goquery.Document) string {
+	var url string
+	var ok bool
+	doc.Find(".list-table").Find("table").Find("tr").Each(func(i int, s *goquery.Selection) {
+		name := s.Find(".ttl").Find("a").Text()
+		if actressName == name {
+			url, ok = s.Find(".ttl").Find("a").Attr("href")
+			if ok && len(strings.TrimSpace(url)) != 0 {
+				return
+				// log.Println(url)
+			}
+		}
+		// log.Println(url, name)
+	})
+	return url
 }
 
 func handelMetadata(performer *Performers, doc *goquery.Document) {
@@ -193,13 +250,30 @@ func handelMetadata(performer *Performers, doc *goquery.Document) {
 	}
 }
 
-func GetImage(url string) string {
+func handelAvatar(performer *Performers, doc *goquery.Document, image *PerformersImage) {
+	imageURL, ok := doc.Find(".thumb").Find("img").Attr("src")
+	if ok {
+		image.PerformerID = performer.ID
+		image.Image = GetImage(imageURL, performer.Name)
+	}
+}
+
+func GetImage(url, name string) string {
 	if len(url) == 0 {
 		return ""
 	}
-	code, body, err, _ := utils.HTTPForMinnanoAV(host+url, referer, "")
+	///p_actress_125_125/003/390420.jpg?new
+	list := strings.Split(url, "/")
+	if len(list) == 3 {
+		s := list[2]
+		i := strings.Index(list[2], ".")
+		if i != -1 {
+			referer = fmt.Sprintf("http://www.minnano-av.com/actress%s.html?%s", s[:i], name)
+		}
+	}
+	code, body, _, err := utils.HTTPForMinnanoAV(fmt.Sprintf("http://%s%s", host, url), referer, "")
 	if err != nil || code != 200 {
-		log.Println("get image fail:", err, code)
+		log.Println("get image fail:", err, code, fmt.Sprintf("http://%s%s", host, url), referer)
 		return ""
 	}
 	// log.Println(string(body))

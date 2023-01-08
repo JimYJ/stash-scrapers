@@ -56,12 +56,12 @@ func HTTPStd(method, url string, payload []byte) (int, []byte, error) {
 	return resp.StatusCode, body, nil
 }
 
-func HTTPForMinnanoAV(url string, referer, userAgent string) (int, []byte, error, int) {
+func HTTPForMinnanoAV(url string, referer, userAgent string) (int, []byte, int, error) {
 	return HTTPCheckJump(GET, url, nil, "www.minnano-av.com", referer, "")
 }
 
 // HTTPCheckJump 标准HTTP请求+检测302转跳
-func HTTPCheckJump(method, urlPath string, payload []byte, host, referer, userAgent string) (int, []byte, error, int) {
+func HTTPCheckJump(method, urlPath string, payload []byte, host, referer, userAgent string) (int, []byte, int, error) {
 	client := &http.Client{}
 	var jumpNum int = 0
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
@@ -70,7 +70,7 @@ func HTTPCheckJump(method, urlPath string, payload []byte, host, referer, userAg
 	}
 	dialer, err := proxy.SOCKS5("tcp", proxyURL, nil, proxy.Direct)
 	if err != nil {
-		return -1, nil, err, jumpNum
+		return -1, nil, jumpNum, err
 	}
 	client.Timeout = httpRequestTimeOut
 	client.Transport = &http.Transport{
@@ -79,7 +79,7 @@ func HTTPCheckJump(method, urlPath string, payload []byte, host, referer, userAg
 	reqbody := bytes.NewReader(payload)
 	req, err := http.NewRequest(method, urlPath, reqbody)
 	if err != nil {
-		return -1, nil, err, jumpNum
+		return -1, nil, jumpNum, err
 	}
 	req.Header.Set("Cache-Control", "no-cache")
 	req.Header.Set("Host", host)
@@ -91,17 +91,17 @@ func HTTPCheckJump(method, urlPath string, payload []byte, host, referer, userAg
 	} else {
 		req.Header.Set("User-Agent", userAgent)
 	}
-	req.Header.Set("Cookie", "PHPSESSID=40smomv7huibn9jevpi7c1t9i2;")
+	req.Header.Set("Cookie", "PHPSESSID=f3lrusc05ug7jdhfkk0bp047f1;")
 	resp, err := client.Do(req)
 	if err != nil {
-		return -1, nil, err, jumpNum
+		return -1, nil, jumpNum, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return -1, nil, err, jumpNum
+		return -1, nil, jumpNum, err
 	}
-	return resp.StatusCode, body, nil, jumpNum
+	return resp.StatusCode, body, jumpNum, nil
 }
 
 // HTTP 自定义请求,可请求二进制流
