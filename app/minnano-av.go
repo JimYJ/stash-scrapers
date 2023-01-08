@@ -131,7 +131,9 @@ func detailPage(performer *Performers, doc *goquery.Document, image *PerformersI
 	performer.Ethnicity.Valid = true
 	performer.Gender.String = "FEMALE"
 	performer.Gender.Valid = true
-	savePerformer(performer)
+	if performer.Aliases.Valid || performer.Birthdate.Valid || performer.CareerLength.Valid || performer.Twitter.Valid || performer.Measurements.Valid || performer.Height.Valid {
+		savePerformer(performer)
+	}
 	counts := checkPerformerImage(image)
 	if counts > 0 {
 		updatePerformerImage(image)
