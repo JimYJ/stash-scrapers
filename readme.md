@@ -4,6 +4,6 @@
 ### tips
 1.stash-scrapers will read and update the stash DB.<br>
 2.stash-scrapers is not a stash scrapers, it run independently<br>
-3.stash-scrapers Scraping site include http://www.minnano-av.com/
+3.stash-scrapers Scraping site include http://www.minnano-av.com/<br>
 4.stash-scrapers need to use a local proxy maybe.
 
