@@ -1,5 +1,9 @@
 base:
-  servicename: OpenPlatfromService
+  servicename: stash
+  proxy:
+    http: http://127.0.0.1:1080
+    socks: 127.0.0.1:1080
+    type: socks #http or socks,if not set, it means no proxy is used
 sqlite:
   path: D:\my-movie-lib\my_porn_lib
   user:

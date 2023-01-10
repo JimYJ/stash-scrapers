@@ -127,6 +127,7 @@ func onlyAvatar(performer *Performers, body []byte) {
 	doc, image := initPerformer(body)
 	handelAvatar(performer, doc, image)
 	savePerformerImage(image)
+	updatePerformerDate(image.PerformerID)
 }
 
 // prase detail page
@@ -141,7 +142,7 @@ func detailPage(performer *Performers, doc *goquery.Document, image *PerformersI
 	performer.Gender.String = "FEMALE"
 	performer.Gender.Valid = true
 	if performer.Aliases.Valid || performer.Birthdate.Valid || performer.CareerLength.Valid || performer.Twitter.Valid || performer.Measurements.Valid || performer.Height.Valid || len(image.Image) > 0 {
-		savePerformer(performer)
+		updatePerformer(performer)
 	}
 	counts := checkPerformerImage(image)
 	if counts > 0 {
