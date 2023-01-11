@@ -13,6 +13,6 @@ func main() {
 	// }
 	// app.SingleTest(p)
 	// app.FixAvatar(9, "H:\\download-01\\390420.jpg")
-	app.MinnanoRun()
-	// app.MinnanoRunAvatar()
+	// app.MinnanoRun()
+	app.MinnanoRunAvatar()
 }

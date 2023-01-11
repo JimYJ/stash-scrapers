@@ -59,6 +59,7 @@ func MinnanoRunAvatar() {
 		if matched {
 			continue
 		}
+		log.Println("start get performer's avatar...", item.Name)
 		body, jumpNum := Search(item.Name)
 		if jumpNum == 1 {
 			onlyAvatar(item, body)
