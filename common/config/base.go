@@ -7,24 +7,26 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// 初始化参数
 var (
 	ServiceName string
 	SqliteInfo  Sqlite
+	ProxyInfo   Proxy
 )
 
-// Config 基础配置
 type config struct {
 	Base   Base
 	Sqlite Sqlite
 }
 
-// Base 搜索引擎
 type Base struct {
 	ServiceName string
+	Proxy       Proxy
 }
 
-// TiDB 数据库配置
+type Proxy struct {
+	HTTP, Socks, Type string
+}
+
 type Sqlite struct {
 	Path, User, Pass, DBName string
 }
@@ -47,10 +49,10 @@ func (conf *config) getConfig(fileName string) *config {
 	return conf
 }
 
-// configInit 获取配置文件
 func configInit() {
 	var conf config
 	conf.getConfig("./config.yml")
 	ServiceName = conf.Base.ServiceName
 	SqliteInfo = conf.Sqlite
+	ProxyInfo = conf.Base.Proxy
 }

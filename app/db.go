@@ -28,11 +28,21 @@ func getNoneImagePerformerList() []*Performers {
 	return list
 }
 
-// save performer metadata
-func savePerformer(performer *Performers) {
+// update performer metadata
+func updatePerformer(performer *Performers) {
 	conn := sqlite.Conn()
 	_, err := conn.Exec("update performers set gender = ?,twitter = ?,birthdate = ?,ethnicity = ?,country = ?,height = ?,measurements = ?,career_length = ?,aliases = ?,updated_at = ? where id = ?",
 		performer.Gender, performer.Twitter, performer.Birthdate, performer.Ethnicity, performer.Country, performer.Height, performer.Measurements, performer.CareerLength, performer.Aliases, time.Now().Local().Format("2006-01-02T15:04:05+08:00"), performer.ID)
+	if err != nil {
+		log.Println("insert performer metadata fail:", err)
+		return
+	}
+}
+
+// update performer updated_at
+func updatePerformerDate(id int) {
+	conn := sqlite.Conn()
+	_, err := conn.Exec("update performers set updated_at = ? where id = ?", time.Now().Local().Format("2006-01-02T15:04:05+08:00"), id)
 	if err != nil {
 		log.Println("insert performer metadata fail:", err)
 		return
